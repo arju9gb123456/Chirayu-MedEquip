@@ -134,7 +134,7 @@ on conflict (username) do nothing;
 
 -- ============================================================ helpers
 create or replace function public.meq__user_json(u public.meq_users)
-returns jsonb language sql immutable as $$
+returns jsonb language sql immutable set search_path = public as $$
   select jsonb_build_object('id',u.id,'role',u.role,'name',u.name,'post',u.post,
                             'mobile',u.mobile,'username',u.username,'active',u.active,
                             'created_at',u.created_at);
