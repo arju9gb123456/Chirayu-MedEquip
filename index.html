@@ -519,7 +519,7 @@
             <tr>
               <td><input type="checkbox" :value="e.id" x-model="selectedIds"></td>
               <td class="font-mono font-bold text-brand-700 cursor-pointer hover:underline" @click="viewPublic(e.id)" x-text="e.id"></td>
-              <td><div class="font-semibold" x-text="e.name"></div><div class="text-[11px] text-gray-500" x-text="[e.manufacturer, e.model, e.serial && ('SN ' + e.serial)].filter(Boolean).join(' · ')"></div></td>
+              <td><div class="font-semibold"><span x-text="e.name"></span> <span x-show="e.doc_count > 0" class="pill bg-slate-100 text-slate-600 !py-0 ml-1" :title="e.doc_count + ' document(s)'"><i class="fa-solid fa-paperclip"></i><span x-text="e.doc_count"></span></span></div><div class="text-[11px] text-gray-500" x-text="[e.manufacturer, e.model, e.serial && ('SN ' + e.serial)].filter(Boolean).join(' · ')"></div></td>
               <td><div x-text="e.department"></div><div class="text-[11px] text-gray-500" x-text="e.location"></div></td>
               <td><span class="pill" :class="statusClass(e.status)" x-text="e.status"></span><div x-show="e.criticality==='Critical'" class="text-[10px] font-bold text-red-600 mt-0.5"><i class="fa-solid fa-heart-pulse"></i> CRITICAL</div></td>
               <td><div class="text-xs font-semibold text-indigo-700" x-text="e.contract_type || '—'"></div><div class="text-[11px]" :class="dateCls(e.contract_to)" x-text="e.contract_to ? 'till ' + fmtD(e.contract_to) : ''"></div></td>
@@ -543,7 +543,7 @@
           <input type="checkbox" :value="e.id" x-model="selectedIds" class="mt-1.5">
           <div class="min-w-0 flex-1">
             <div class="flex items-start justify-between gap-2">
-              <div class="min-w-0"><span class="font-mono font-bold text-brand-700 text-xs" x-text="'#' + e.id"></span><div class="font-semibold text-sm leading-snug" x-text="e.name"></div></div>
+              <div class="min-w-0"><span class="font-mono font-bold text-brand-700 text-xs" x-text="'#' + e.id"></span><div class="font-semibold text-sm leading-snug"><span x-text="e.name"></span> <span x-show="e.doc_count > 0" class="pill bg-slate-100 text-slate-600 !py-0"><i class="fa-solid fa-paperclip"></i><span x-text="e.doc_count"></span></span></div></div>
               <span class="pill shrink-0" :class="statusClass(e.status)" x-text="e.status"></span>
             </div>
             <div class="text-[11.5px] text-gray-500 mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i><span x-text="e.department + ' · ' + e.location"></span></div>
@@ -1104,6 +1104,31 @@
           </template>
         </div>
       </div>
+      <div>
+        <h4 class="text-xs font-bold text-brand-700 uppercase tracking-wider mb-3 pb-1 border-b flex items-center justify-between gap-2"><span><i class="fa-solid fa-folder-open mr-1"></i>Documents <span class="font-normal normal-case text-gray-400">(invoice, AMC / CMC, warranty, calibration… · PDF or photo · max 6 MB · admins only)</span></span></h4>
+        <div class="grid sm:grid-cols-[200px_1fr_auto] gap-2 items-end">
+          <div><label class="lbl">Document type</label><select x-model="docKind" class="inp"><template x-for="k in DOC_KINDS" :key="k[0]"><option :value="k[0]" x-text="k[1]"></option></template></select></div>
+          <div><label class="lbl">Note <span class="font-normal text-gray-400">(optional — e.g. invoice no., vendor, validity)</span></label><input type="text" x-model="docNote" maxlength="300" class="inp" placeholder="e.g. Invoice #INV-2291 · Vendor: ABC Medical · ₹4,85,000"></div>
+          <label class="btn btn-primary cursor-pointer" :class="docUploading && 'opacity-60 pointer-events-none'"><i class="fa-solid" :class="docUploading ? 'fa-spinner fa-spin' : 'fa-upload'"></i><span x-text="docUploading ? 'Uploading…' : 'Upload file'"></span><input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" class="hidden" multiple @change="pickDocs($event)"></label>
+        </div>
+        <div x-show="eqDocsLoading" class="text-xs text-gray-500 mt-3"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Loading documents…</div>
+        <div class="mt-3 space-y-2">
+          <template x-for="d in allEqDocs" :key="d.id || d.tmp">
+            <div class="flex items-center gap-3 border rounded-xl p-2.5 hover:bg-slate-50 transition">
+              <span class="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" :class="d.mime==='application/pdf' ? 'bg-red-50 text-red-600' : 'bg-sky-50 text-sky-600'"><i class="fa-solid" :class="docIcon(d)"></i></span>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-semibold truncate" x-text="d.file_name"></div>
+                <div class="text-[11px] text-gray-500 truncate"><span class="pill bg-brand-50 text-brand-800 !py-0" x-text="docKindLabel(d.kind)"></span> <span x-text="fmtSize(d.size_bytes)"></span><span x-show="d.created_at" x-text="' · ' + fmtDT(d.created_at)"></span><span x-show="d.uploaded_by" x-text="' · ' + d.uploaded_by"></span><span x-show="d.pending" class="text-amber-700 font-semibold"> · will upload on save</span></div>
+                <div x-show="d.note" class="text-[11px] text-gray-600 truncate" x-text="d.note"></div>
+              </div>
+              <button type="button" class="btn btn-soft btn-sm btn-icon" @click="viewDoc(d)" title="View"><i class="fa-solid fa-eye"></i></button>
+              <button type="button" class="btn btn-soft btn-sm btn-icon" @click="downloadDoc(d)" title="Download"><i class="fa-solid fa-download"></i></button>
+              <button type="button" class="btn btn-danger btn-sm btn-icon" @click="deleteDoc(d)" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </template>
+          <div x-show="!eqDocsLoading && allEqDocs.length===0" class="text-xs text-gray-400 border border-dashed rounded-xl p-4 text-center"><i class="fa-regular fa-folder-open mr-1"></i>No documents yet. Upload the purchase invoice and AMC / CMC contract here.</div>
+        </div>
+      </div>
       <div class="flex justify-end gap-2 pt-4 border-t">
         <button type="button" class="btn btn-soft" @click="showEq=false">Cancel</button>
         <button type="submit" class="btn btn-primary px-6" :disabled="eqSaving || eqImgLoading"><i class="fa-solid" :class="eqSaving ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i><span x-text="eqForm.id ? 'Update Record' : 'Save & Generate QR'"></span></button>
@@ -1302,6 +1327,11 @@ const ERRORS = {
   EQUIPMENT_NOT_FOUND: 'No equipment found with this ID.',
   INVALID_MOBILE: 'Please enter a valid 10-digit mobile number.',
   INVALID_MESSAGE: 'Please describe the problem (at least 5 characters).',
+  INVALID_DOC_TYPE: 'Please choose a valid document type.',
+  INVALID_FILE_TYPE: 'Only PDF, JPG, PNG or WEBP files can be uploaded.',
+  INVALID_FILE: 'This file could not be read.',
+  FILE_TOO_LARGE: 'File is too large — maximum 6 MB per file.',
+  TOO_MANY_DOCS: 'Maximum 30 documents per equipment.',
   TOO_MANY_REQUESTS: 'Too many complaints submitted — please try again in a few minutes.',
   NAME_REQUIRED: 'Name is required.',
   NOTES_REQUIRED: 'Please enter the resolution / action taken before closing.',
@@ -1377,7 +1407,7 @@ const LocalDB = (() => {
       db.complaints.unshift(c); save(db); return { code: c.code, tat_hours: tat, equipment_name: e.name, opened_at: t };
     },
     track_complaints({ p_mobile }) { const m = String(p_mobile || '').trim(); if (!/^\d{10}$/.test(m)) return []; return load().complaints.filter(c => c.reporter_mobile === m).sort(byOpenDesc).slice(0, 100).map(pub); },
-    admin_data({ p_token }) { const db = load(); auth(db, p_token, 'admin'); return { equipment: db.equipment.map(noImg), complaints: db.complaints.slice().sort(byOpenDesc).map(c => cJson(db, c)), users: db.users.map(userJson), settings: db.settings }; },
+    admin_data({ p_token }) { const db = load(); auth(db, p_token, 'admin'); const docs = db.documents || []; return { equipment: db.equipment.map(e => Object.assign(noImg(e), { doc_count: docs.filter(d => d.equipment_id === e.id).length })), complaints: db.complaints.slice().sort(byOpenDesc).map(c => cJson(db, c)), users: db.users.map(userJson), settings: db.settings }; },
     save_equipment({ p_token, p_data: d }) {
       const db = load(); auth(db, p_token, 'admin'); if (!String(d.name || '').trim()) fail('NAME_REQUIRED');
       let e = d.id && db.equipment.find(x => x.id === d.id);
@@ -1385,7 +1415,21 @@ const LocalDB = (() => {
       EQ_FIELDS.forEach(f => e[f] = d[f] == null ? '' : d[f]); e.name = String(d.name).trim(); e.status = e.status || 'Operational'; e.updated_at = nowISO();
       save(db); return noImg(e);
     },
-    delete_equipment({ p_token, p_ids }) { const db = load(); auth(db, p_token, 'admin'); const n = db.equipment.length; db.equipment = db.equipment.filter(e => !p_ids.includes(e.id)); save(db); return n - db.equipment.length; },
+    delete_equipment({ p_token, p_ids }) { const db = load(); auth(db, p_token, 'admin'); const n = db.equipment.length; db.equipment = db.equipment.filter(e => !p_ids.includes(e.id)); db.documents = (db.documents || []).filter(d => !p_ids.includes(d.equipment_id)); save(db); return n - db.equipment.length; },
+    doc_list({ p_token, p_equipment_id }) { const db = load(); auth(db, p_token, 'admin'); return (db.documents || []).filter(d => d.equipment_id === p_equipment_id).map(({ data, ...m }) => m).sort((a, b) => b.created_at.localeCompare(a.created_at)); },
+    doc_add({ p_token, p_equipment_id, p_kind, p_file_name, p_mime, p_data, p_note }) {
+      const db = load(); const u = auth(db, p_token, 'admin');
+      if (!db.equipment.some(e => e.id === p_equipment_id)) fail('EQUIPMENT_NOT_FOUND');
+      if (!['invoice','amc','cmc','warranty','calibration','service','other'].includes(p_kind)) fail('INVALID_DOC_TYPE');
+      if (!['application/pdf','image/jpeg','image/png','image/webp'].includes(p_mime)) fail('INVALID_FILE_TYPE');
+      if (!p_data || !/^[A-Za-z0-9+/=]+$/.test(p_data)) fail('INVALID_FILE');
+      const size = Math.floor(p_data.length * 3 / 4) - (p_data.length - p_data.replace(/=+$/, '').length); if (size > 6291456) fail('FILE_TOO_LARGE');
+      db.documents = db.documents || []; if (db.documents.filter(d => d.equipment_id === p_equipment_id).length >= 30) fail('TOO_MANY_DOCS');
+      const d = { id: uid(), equipment_id: p_equipment_id, kind: p_kind, file_name: String(p_file_name || 'document').slice(0, 150), mime: p_mime, size_bytes: size, data: p_data, note: String(p_note || '').slice(0, 300), uploaded_by: u.name, created_at: nowISO() };
+      db.documents.push(d); save(db); const { data, ...m } = d; return m;
+    },
+    doc_get({ p_token, p_id }) { const db = load(); auth(db, p_token, 'admin'); const d = (db.documents || []).find(x => x.id === p_id); if (!d) fail('NOT_FOUND'); return { file_name: d.file_name, mime: d.mime, data: d.data }; },
+    doc_delete({ p_token, p_id }) { const db = load(); auth(db, p_token, 'admin'); db.documents = (db.documents || []).filter(d => d.id !== p_id); save(db); return null; },
     save_complaint({ p_token, p_data: d }) {
       const db = load(); const u = auth(db, p_token, 'admin'); const c = db.complaints.find(x => x.id === d.id); if (!c) fail('NOT_FOUND');
       const status = d.status || c.status; const notes = d.resolution_notes != null ? d.resolution_notes : c.resolution_notes;
@@ -1451,6 +1495,7 @@ function medEquipApp() {
     STATUSES: ['Operational', 'In Maintenance', 'Out of Service', 'Condemned'],
     CATEGORIES: ['Imaging', 'Critical Care', 'Life Support', 'Monitoring', 'Laboratory', 'Surgical', 'Therapeutic', 'Diagnostic', 'Sterilization', 'Other'],
     DEPARTMENTS: ['Anatomy','Physiology','Biochemistry','Pathology','Microbiology','Pharmacology','Forensic Medicine','Community Medicine','General Medicine','General Surgery','Obstetrics & Gynaecology','Pediatrics','NICU','PICU','Orthopedics','ENT','Ophthalmology','Dermatology','Psychiatry','Radiology','Anaesthesiology','ICU / Critical Care','Emergency / Casualty','Cardiology','Neurology','Nephrology','Gastroenterology','Pulmonology','Urology','Neurosurgery','Plastic Surgery','CTVS','Oncology','Blood Bank','Central Lab','CSSD','Operation Theater','Dialysis','Physiotherapy','Dental','Biomedical Engineering','Pharmacy','Administration'],
+    DOC_KINDS: [['invoice', 'Invoice / Bill', 'fa-file-invoice'], ['amc', 'AMC Contract', 'fa-file-contract'], ['cmc', 'CMC Contract', 'fa-file-shield'], ['warranty', 'Warranty Card', 'fa-certificate'], ['calibration', 'Calibration Certificate', 'fa-gauge-high'], ['service', 'Service Report', 'fa-screwdriver-wrench'], ['other', 'Other', 'fa-file']],
     PHOTO_FIELDS: [['Front view', 'img_front'], ['Back view', 'img_back'], ['Label / nameplate', 'img_label']],
     COMPLAINT_FILTERS: [['active', 'Active', 'fa-bolt'], ['Open', 'Open', 'fa-envelope-open'], ['In Progress', 'In Progress', 'fa-spinner'], ['overdue', 'Overdue', 'fa-stopwatch'], ['unassigned', 'Unassigned', 'fa-user-clock'], ['all', 'All', 'fa-list']],
     SETTINGS_TABS: [['tat', 'Complaint TAT', 'fa-stopwatch'], ['reminders', 'Reminders', 'fa-bell'], ['qr', 'QR & Public Link', 'fa-qrcode'], ['account', 'My Account', 'fa-user-shield'], ['system', 'System', 'fa-server']],
@@ -1473,6 +1518,7 @@ function medEquipApp() {
     qrSearch: '', qrDept: '', qrSelected: [], qrLimit: 60,
     showLogin: false, loginUser: '', loginPass: '', loginBusy: false, showPass: false,
     showEq: false, eqForm: {}, eqSaving: false, eqImgLoading: false,
+    eqDocs: [], pendingDocs: [], eqDocsLoading: false, docKind: 'invoice', docNote: '', docUploading: false,
     showCEdit: false, cEdit: {}, showClose: false, closeTarget: null, closeNotes: '',
     showUser: false, userForm: {}, showPin: false, pinForm: { old: '', new1: '', new2: '' },
     showEqHist: false, eqHist: null, showReminder: false, reminders: [],
@@ -1743,8 +1789,9 @@ function medEquipApp() {
 
     /* ------------------------------- equipment ------------------------------- */
     blankEquipment() { return { id: '', name: '', category: 'Imaging', manufacturer: '', model: '', serial: '', department: '', location: '', status: 'Operational', contract_type: 'AMC', contract_from: '', contract_to: '', criticality: 'Critical', consumables: '', last_maint: '', next_maint: '', calibration_done: '', next_calibration: '', img_front: '', img_back: '', img_label: '' }; },
-    openAddEquipment() { this.eqForm = this.blankEquipment(); this.showEq = true; },
+    openAddEquipment() { this.eqForm = this.blankEquipment(); this.eqDocs = []; this.pendingDocs = []; this.docNote = ''; this.showEq = true; },
     async openEditEquipment(item) {
+      this.eqDocs = []; this.pendingDocs = []; this.docNote = ''; this.loadDocs(item.id);
       const f = this.blankEquipment(); Object.keys(f).forEach(k => { if (item[k] != null) f[k] = item[k]; });
       this.eqForm = f; this.showEq = true;
       if (!item.img_front && !item.img_back && !item.img_label) {
@@ -1773,10 +1820,76 @@ function medEquipApp() {
         const i = this.equipment.findIndex(e => e.id === saved.id); if (i >= 0) this.equipment.splice(i, 1, saved); else this.equipment.unshift(saved);
         if (this.record && this.record.id === saved.id) this.record = Object.assign({}, saved, { img_front: f.img_front, img_back: f.img_back, img_label: f.img_label });
         this.showEq = false; this.toast(f.id ? 'Equipment #' + saved.id + ' updated' : 'Registered with ID ' + saved.id + ' — QR ready');
-        if (!f.id) this.qrSelected = [saved.id];
+        if (!f.id) { this.qrSelected = [saved.id]; if (this.pendingDocs.length) this.uploadPendingDocs(saved.id); }
         this.buildReminders();
       } catch (e) {} finally { this.eqSaving = false; }
     },
+    /* ------------------------------- documents ------------------------------- */
+    get allEqDocs() { return this.pendingDocs.concat(this.eqDocs); },
+    docKindLabel(k) { const x = this.DOC_KINDS.find(d => d[0] === k); return x ? x[1] : k; },
+    docIcon(d) { if (d.mime === 'application/pdf') return 'fa-file-pdf'; const x = this.DOC_KINDS.find(k => k[0] === d.kind); return d.mime && d.mime.startsWith('image/') ? 'fa-file-image' : (x ? x[2] : 'fa-file'); },
+    fmtSize(b) { if (!b) return ''; return b < 1024 * 1024 ? Math.max(1, Math.round(b / 1024)) + ' KB' : (b / 1048576).toFixed(1) + ' MB'; },
+    async loadDocs(eqId) {
+      if (!eqId || !this.token) return;
+      this.eqDocsLoading = true;
+      try { const list = await this.api('doc_list', { p_token: this.token, p_equipment_id: eqId }, { silent: true }); if (this.eqForm.id === eqId) this.eqDocs = list || []; }
+      catch (e) {} finally { this.eqDocsLoading = false; }
+    },
+    readFileB64(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = () => rej(new Error('This file could not be read.')); r.readAsDataURL(file); }); },
+    async prepareDoc(file) {
+      const okTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+      if (!okTypes.includes(file.type)) throw new Error('"' + file.name + '": only PDF, JPG, PNG or WEBP allowed.');
+      let mime = file.type, data;
+      if (mime.startsWith('image/')) { const url = await this.compressImage(file, 1800, 0.82); data = url.split(',')[1]; mime = 'image/jpeg'; }
+      else data = await this.readFileB64(file);
+      const size = Math.floor(data.length * 3 / 4);
+      if (size > 6291456) throw new Error('"' + file.name + '" is larger than 6 MB.');
+      let name = file.name; if (mime === 'image/jpeg' && !/\.jpe?g$/i.test(name)) name = name.replace(/\.[^.]+$/, '') + '.jpg';
+      return { kind: this.docKind, file_name: name, mime, data, size_bytes: size, note: this.docNote.trim() };
+    },
+    async pickDocs(ev) {
+      const files = Array.from(ev.target.files || []); ev.target.value = ''; if (!files.length) return;
+      this.docUploading = true;
+      try {
+        for (const file of files) {
+          let d; try { d = await this.prepareDoc(file); } catch (e) { this.toast(e.message, 'warn'); continue; }
+          if (this.eqForm.id) {
+            try {
+              const m = await this.api('doc_add', { p_token: this.token, p_equipment_id: this.eqForm.id, p_kind: d.kind, p_file_name: d.file_name, p_mime: d.mime, p_data: d.data, p_note: d.note });
+              this.eqDocs.unshift(m); this.bumpDocCount(this.eqForm.id, 1); this.toast(this.docKindLabel(d.kind) + ' uploaded');
+            } catch (e) {}
+          } else { this.pendingDocs.unshift(Object.assign({ tmp: 't' + Date.now() + Math.random(), pending: true }, d)); }
+        }
+        this.docNote = '';
+      } finally { this.docUploading = false; }
+    },
+    async uploadPendingDocs(eqId) {
+      const list = this.pendingDocs.slice().reverse(); this.pendingDocs = []; let ok = 0;
+      for (const d of list) { try { await this.api('doc_add', { p_token: this.token, p_equipment_id: eqId, p_kind: d.kind, p_file_name: d.file_name, p_mime: d.mime, p_data: d.data, p_note: d.note }); ok++; } catch (e) {} }
+      if (ok) { this.bumpDocCount(eqId, ok); this.toast(ok + ' document(s) uploaded'); }
+    },
+    bumpDocCount(eqId, n) { const e = this.equipment.find(x => x.id === eqId); if (e) e.doc_count = Math.max(0, (e.doc_count || 0) + n); },
+    async docBlob(d) {
+      const full = d.pending ? d : await this.api('doc_get', { p_token: this.token, p_id: d.id });
+      const bin = atob(full.data); const arr = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      return new Blob([arr], { type: full.mime });
+    },
+    async viewDoc(d) {
+      const w = window.open('', '_blank');
+      try {
+        const url = URL.createObjectURL(await this.docBlob(d));
+        if (w) w.location.href = url; else this.saveBlobUrl(url, d.file_name);
+        setTimeout(() => URL.revokeObjectURL(url), 120000);
+      } catch (e) { if (w) w.close(); }
+    },
+    async downloadDoc(d) { try { const url = URL.createObjectURL(await this.docBlob(d)); this.saveBlobUrl(url, d.file_name); setTimeout(() => URL.revokeObjectURL(url), 60000); } catch (e) {} },
+    saveBlobUrl(url, name) { const a = document.createElement('a'); a.href = url; a.download = name || 'document'; document.body.appendChild(a); a.click(); a.remove(); },
+    async deleteDoc(d) {
+      if (d.pending) { this.pendingDocs = this.pendingDocs.filter(x => x !== d); return; }
+      if (!confirm('Delete "' + d.file_name + '"? This cannot be undone.')) return;
+      try { await this.api('doc_delete', { p_token: this.token, p_id: d.id }); this.eqDocs = this.eqDocs.filter(x => x.id !== d.id); this.bumpDocCount(this.eqForm.id, -1); this.toast('Document deleted'); } catch (e) {}
+    },
+
     async deleteEquipment(ids) {
       if (!ids.length || !confirm('Delete ' + ids.length + ' equipment record(s)? This cannot be undone.')) return;
       try {
