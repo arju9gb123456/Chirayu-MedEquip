@@ -9,6 +9,7 @@ QR-based equipment verification, public complaint portal, TAT tracking, technici
 - **Admin:** dashboard, equipment register (with photos and documents — invoice, AMC/CMC contract, warranty, calibration certificate, service report — multi-file drag & drop queue per equipment, plus Bulk Upload that auto-matches files to equipment by the 6-digit ID in the file name), complaints (assign / edit / TAT / close / reopen), complaint history, separate Technicians & Admins management (minimum 3 admins), QR label printing, Excel export, section-wise printing, settings
 - **Technician:** login with mobile number + PIN, assigned jobs, work notes
 - **Reminders:** pop-ups for overdue TAT, unassigned complaints, PM / calibration / contract due dates
+- **Help button:** staff can report an issue straight to the developer's WhatsApp (page, user and device details attached automatically); "About BioTrack" tab with team details and the brochure ([BioTrack_Brochure.pdf](BioTrack_Brochure.pdf))
 - Mobile-friendly, works offline in demo mode
 
 ## Go live
@@ -17,6 +18,8 @@ QR-based equipment verification, public complaint portal, TAT tracking, technici
 3. Deploy this repo on **Vercel** (framework: *Other*, no build command).
 4. Log in → **Settings → QR & Public Link** → paste the Vercel URL → print QR labels.
 5. **Change the default admin PINs immediately:** `admin1 / Chirayu@1`, `admin2 / Chirayu@2`, `admin3 / Chirayu@3`.
+
+The WhatsApp number for issue reports is `SUPPORT_WHATSAPP` in `MEQ_CONFIG`.
 
 Without Supabase keys the app runs in **demo mode** (data stored in the browser only).
 
