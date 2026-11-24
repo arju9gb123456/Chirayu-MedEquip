@@ -8,6 +8,7 @@ QR-based equipment verification, public complaint portal, TAT tracking, technici
 - **Public:** equipment lookup by 6-digit ID or QR scan, complaint registration, complaint tracking by mobile number
 - **Admin:** dashboard, equipment register (with photos and documents — invoice, AMC/CMC contract, warranty, calibration certificate, service report — multi-file drag & drop queue per equipment, plus Bulk Upload that auto-matches files to equipment by the 6-digit ID in the file name), complaints (assign / edit / TAT / close / reopen), complaint history, separate Technicians & Admins management (minimum 3 admins), QR label printing, Excel export, section-wise printing, settings
 - **Technician:** login with mobile number + PIN, assigned jobs, work notes
+- **Excel import:** add hundreds of machines at once from an .xlsx / .csv (template with a Guide sheet, or your own sheet — common headers like *Equipment Name, Make, Serial No, Dept, AMC To* are recognised), preview with errors / duplicate-serial check, update existing machines by exporting, editing and importing back (ID column), result report and one-click QR printing for the new machines. No database change needed.
 - **Reminders:** pop-ups for overdue TAT, unassigned complaints, PM / calibration / contract due dates
 - **Help button:** staff can report an issue straight to the developer's WhatsApp (page, user and device details attached automatically); "About BioTrack" tab with team details and the brochure ([BioTrack_Brochure.pdf](BioTrack_Brochure.pdf))
 - Mobile-friendly, works offline in demo mode
