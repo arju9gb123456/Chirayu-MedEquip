@@ -408,9 +408,9 @@
   <div class="sticky top-16 z-30 -mx-3 px-3 sm:mx-0 sm:px-0 py-1 bg-slate-50/95 backdrop-blur">
     <div class="flex gap-1 overflow-x-auto no-scrollbar bg-white border rounded-xl p-1.5">
       <template x-for="t in adminTabs" :key="t[0]">
-        <button class="tab" :class="adminTab===t[0] && 'active'" @click="setAdminTab(t[0])">
+        <button class="tab" :class="(adminTab===t[0] || (t[0]==='complaints' && adminTab==='history')) && 'active'" @click="setAdminTab(t[0])">
           <i class="fa-solid" :class="t[2]"></i><span x-text="t[1]"></span>
-          <span x-show="t[3] && t[3]() > 0" class="ml-0.5 px-1.5 rounded-full text-[10px] font-bold" :class="adminTab===t[0] ? 'bg-white/25' : 'bg-orange-100 text-orange-800'" x-text="t[3] ? t[3]() : ''"></span>
+          <span x-show="t[3] && t[3]() > 0" class="ml-0.5 px-1.5 rounded-full text-[10px] font-bold" :class="(adminTab===t[0] || (t[0]==='complaints' && adminTab==='history')) ? 'bg-white/25' : 'bg-orange-100 text-orange-800'" x-text="t[3] ? t[3]() : ''"></span>
         </button>
       </template>
     </div>
@@ -586,6 +586,12 @@
     </div>
     <div x-show="filteredEquipment.length===0" class="text-center text-gray-400 py-10 text-sm"><i class="fa-solid fa-box-open text-2xl mb-2 block"></i>No equipment found.</div>
     <div class="px-4 py-2.5 bg-slate-50 border-t text-xs text-gray-500">Showing <strong x-text="filteredEquipment.length"></strong> of <strong x-text="equipment.length"></strong></div>
+  </div>
+
+  <!-- ---------------- COMPLAINTS: sub-tabs (Complaints | History) ---------------- -->
+  <div x-show="adminTab==='complaints' || adminTab==='history'" class="flex gap-1 bg-white border rounded-xl p-1 mb-3 w-full sm:w-fit">
+    <button class="tab flex-1 sm:flex-none justify-center" :class="adminTab==='complaints' && 'active'" @click="setAdminTab('complaints')"><i class="fa-solid fa-headset"></i><span>Active Complaints</span><span x-show="complaintsBy('active').length" class="ml-0.5 px-1.5 rounded-full text-[10px] font-bold" :class="adminTab==='complaints' ? 'bg-white/25' : 'bg-orange-100 text-orange-800'" x-text="complaintsBy('active').length"></span></button>
+    <button class="tab flex-1 sm:flex-none justify-center" :class="adminTab==='history' && 'active'" @click="setAdminTab('history')"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span><span class="ml-0.5 px-1.5 rounded-full text-[10px] font-bold" :class="adminTab==='history' ? 'bg-white/25' : 'bg-slate-100 text-slate-600'" x-text="closedComplaints.length"></span></button>
   </div>
 
   <!-- ---------------- COMPLAINTS ---------------- -->
@@ -2622,7 +2628,7 @@ function medEquipApp() {
     get tatCompliance() { const cl = this.closedComplaints.filter(c => c.closed_at); if (!cl.length) return null; return Math.round(100 * cl.filter(c => new Date(c.closed_at).getTime() <= this.dueAt(c)).length / cl.length); },
     get adminTabs() {
       return [['dashboard', 'Dashboard', 'fa-chart-pie'], ['equipment', 'Equipment', 'fa-stethoscope'], ['complaints', 'Complaints', 'fa-headset', () => this.complaintsBy('active').length],
-        ['history', 'History', 'fa-clock-rotate-left'], ['nabh', 'NABH & PM', 'fa-clipboard-check', () => this.pmOverdue.length + this.calOverdue.length], ['technicians', 'Technicians', 'fa-user-gear'], ['admins', 'Admins', 'fa-user-shield'], ['qr', 'QR Labels', 'fa-qrcode'], ['settings', 'Settings', 'fa-sliders']];
+        ['nabh', 'NABH & PM', 'fa-clipboard-check', () => this.pmOverdue.length + this.calOverdue.length], ['technicians', 'Technicians', 'fa-user-gear'], ['admins', 'Admins', 'fa-user-shield'], ['qr', 'QR Labels', 'fa-qrcode'], ['settings', 'Settings', 'fa-sliders']];
     },
     get dashCards() {
       const cnt = s => this.equipment.filter(e => e.status === s).length;
@@ -3195,7 +3201,7 @@ function medEquipApp() {
     helpPageLabel() {
       const tabs = Object.fromEntries(this.adminTabs.map(t => [t[0], t[1]]));
       let p = ({ lookup: 'Equipment Lookup', complaint: 'Raise Complaint', track: 'Track Complaints', admin: 'Admin Hub', tech: 'Technician – My Jobs' })[this.route] || this.route;
-      if (this.route === 'admin') p += ' › ' + (tabs[this.adminTab] || this.adminTab);
+      if (this.route === 'admin') p += ' › ' + (this.adminTab === 'history' ? 'Complaints › History' : (tabs[this.adminTab] || this.adminTab));
       if (this.route === 'lookup' && this.record) p += ' › #' + this.record.id + ' ' + this.record.name;
       if (this.showEq) p += ' › Equipment form' + (this.eqForm.id ? ' #' + this.eqForm.id : ' (new)');
       return p;
